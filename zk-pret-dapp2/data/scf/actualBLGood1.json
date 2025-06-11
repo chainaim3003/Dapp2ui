@@ -1,0 +1,18 @@
+{
+    "transportDocumentReference": "62CD536BA8D34C469AFD",
+    "shippingInstructionsReference": "fc5009a7-25ad-4bb0-9892-4e2dea6bcdd9",
+    "transportDocumentStatus": "DRAFT",
+    "transportDocumentTypeCode": "BOL",
+    "isShippedOnBoardType": true,
+    "freightPaymentTermCode": "PRE",
+    "isElectronic": true,
+    "isToOrder": true,
+    "shippedOnBoardDate": "2023-12-20",
+    "receiptTypeAtOrigin": "CY",
+    "deliveryTypeAtDestination": "CY",
+    "cargoMovementTypeAtOrigin": "FCL",
+    "cargoMovementTypeAtDestination": "FCL",
+    "serviceContractReference": "SCR-1234-REGULAR",
+    "carrierCode": "MSC",
+    "carrierCodeListProvider": "SMDG"
+}
