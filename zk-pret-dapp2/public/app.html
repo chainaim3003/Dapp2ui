@@ -381,7 +381,7 @@
     <main class="max-w-7xl mx-auto px-4 py-8">
         <div id="notifications" class="fixed top-4 right-4 z-50"></div>
         
-        <div class="mb-8">
+        <div class="mb-8" id="tab-navigation">
             <nav class="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
                 <button class="tab-btn active flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="compliance">
                     <i class="fas fa-shield-alt mr-2"></i>Compliance Prover
@@ -419,6 +419,28 @@
                 <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="registry">
                     <i class="fas fa-book mr-2"></i>Registry
                 </button>
+            </nav>
+            
+            <!-- Business Process Integrity Prover Only Navigation -->
+            <nav id="process-integrity-only-nav" class="hidden bg-white rounded-lg p-1 shadow-sm">
+                <div class="text-center py-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center justify-center">
+                        <i class="fas fa-sitemap mr-3 text-indigo-600"></i>
+                        Business Process Integrity Prover
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-2">Verify business process integrity using BPMN and workflow validation</p>
+                </div>
+            </nav>
+            
+            <!-- Business Data Integrity Prover Only Navigation -->
+            <nav id="data-integrity-only-nav" class="hidden bg-white rounded-lg p-1 shadow-sm">
+                <div class="text-center py-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center justify-center">
+                        <i class="fas fa-database mr-3 text-purple-600"></i>
+                        Business Data Integrity Prover
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-2">Prove data integrity without revealing content or structure</p>
+                </div>
             </nav>
         </div>
 
@@ -1417,6 +1439,7 @@
     </main>
 
     <script src="scf_enhancement.js"></script>
+    <script src="global-functions.js"></script>
     <script>
         class ZKPretAsyncApp {
             constructor() {
@@ -1440,11 +1463,74 @@
             }
 
             async init() {
+                this.checkSpecialTabMode();
                 this.setupEventListeners();
                 this.setupFileDropZones();
                 this.initWebSocket();
                 await this.checkConnection();
                 this.updateModeDisplay();
+            }
+
+            checkSpecialTabMode() {
+                // Check if we should show only specific tab based on target
+                const targetTab = sessionStorage.getItem('zkpret_target_tab');
+                if (targetTab === 'process-integrity') {
+                    this.showProcessIntegrityOnly();
+                } else if (targetTab === 'data-integrity') {
+                    this.showDataIntegrityOnly();
+                }
+            }
+
+            showProcessIntegrityOnly() {
+                // Hide the main tab navigation
+                const mainNav = document.querySelector('#tab-navigation nav:first-child');
+                const processIntegrityOnlyNav = document.getElementById('process-integrity-only-nav');
+                
+                mainNav.classList.add('hidden');
+                processIntegrityOnlyNav.classList.remove('hidden');
+                
+                // Hide all tab content except process-integrity
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id !== 'process-integrity-tab') {
+                        content.style.display = 'none';
+                    }
+                });
+                
+                // Show only process-integrity tab
+                document.getElementById('process-integrity-tab').classList.remove('hidden');
+                this.currentTab = 'process-integrity';
+                
+                // Update page title to reflect the current mode
+                document.title = 'Business Process Integrity Prover | ZK-PRET';
+                
+                // Clear the session storage to avoid affecting other navigations
+                sessionStorage.removeItem('zkpret_target_tab');
+            }
+
+            showDataIntegrityOnly() {
+                // Hide the main tab navigation
+                const mainNav = document.querySelector('#tab-navigation nav:first-child');
+                const dataIntegrityOnlyNav = document.getElementById('data-integrity-only-nav');
+                
+                mainNav.classList.add('hidden');
+                dataIntegrityOnlyNav.classList.remove('hidden');
+                
+                // Hide all tab content except data-integrity
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id !== 'data-integrity-tab') {
+                        content.style.display = 'none';
+                    }
+                });
+                
+                // Show only data-integrity tab
+                document.getElementById('data-integrity-tab').classList.remove('hidden');
+                this.currentTab = 'data-integrity';
+                
+                // Update page title to reflect the current mode
+                document.title = 'Business Data Integrity Prover | ZK-PRET';
+                
+                // Clear the session storage to avoid affecting other navigations
+                sessionStorage.removeItem('zkpret_target_tab');
             }
 
             setupEventListeners() {
@@ -1610,6 +1696,15 @@
             }
 
             switchTab(tabName) {
+                // Check if we're in any specialized mode
+                const processIntegrityOnlyNav = document.getElementById('process-integrity-only-nav');
+                const dataIntegrityOnlyNav = document.getElementById('data-integrity-only-nav');
+                
+                if (!processIntegrityOnlyNav.classList.contains('hidden') || !dataIntegrityOnlyNav.classList.contains('hidden')) {
+                    // In specialized mode, don't allow tab switching
+                    return;
+                }
+                
                 // In sync mode, prevent tab switching during execution
                 if (!this.isAsyncMode && this.syncExecuting) {
                     this.showNotification(
@@ -1622,11 +1717,17 @@
 
                 // Update buttons
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                }
 
                 // Update content
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+                const targetTab = document.getElementById(`${tabName}-tab`);
+                if (targetTab) {
+                    targetTab.classList.remove('hidden');
+                }
 
                 this.currentTab = tabName;
             }
@@ -1704,6 +1805,63 @@
                 } else {
                     await this.executeSync('get-EXIM-verification-with-sign', parameters);
                 }
+            }
+
+            // File management functions
+            clearDataFile() {
+                this.uploadedFiles.dataFile = null;
+                const dropZone = document.getElementById('data-file-drop-zone');
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                placeholder.style.display = 'flex';
+                fileInfo.classList.remove('show');
+                dropZone.classList.remove('has-file');
+                
+                // Reset file input
+                document.getElementById('data-file-input').value = '';
+            }
+
+            clearActualProcessFile() {
+                this.uploadedFiles.actualProcessFile = null;
+                const dropZone = document.getElementById('actual-process-drop-zone');
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                placeholder.style.display = 'flex';
+                fileInfo.classList.remove('show');
+                dropZone.classList.remove('has-file');
+                
+                // Reset file input
+                document.getElementById('actual-process-input').value = '';
+            }
+
+            clearExpectedProcessFile() {
+                this.uploadedFiles.expectedProcessFile = null;
+                const dropZone = document.getElementById('expected-process-drop-zone');
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                placeholder.style.display = 'flex';
+                fileInfo.classList.remove('show');
+                dropZone.classList.remove('has-file');
+                
+                // Reset file input
+                document.getElementById('expected-process-input').value = '';
+            }
+
+            clearDeepCompositionFile() {
+                this.uploadedFiles.deepCompositionFile = null;
+                const dropZone = document.getElementById('deep-composition-file-drop-zone');
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                placeholder.style.display = 'flex';
+                fileInfo.classList.remove('show');
+                dropZone.classList.remove('has-file');
+                
+                // Reset file input
+                document.getElementById('deep-composition-file-input').value = '';
             }
 
             async executeBusinessDataIntegrity() {
