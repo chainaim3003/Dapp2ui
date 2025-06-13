@@ -56,28 +56,39 @@ class AsyncJobManager {
   private async processJob(job: Job) {
     try {
       job.status = 'running';
+      job.progress = 0;
       this.broadcastJobUpdate(job);
 
-      // Simulate progress updates
-      const progressUpdates = [10, 25, 50, 75, 90];
-      for (const progress of progressUpdates) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        job.progress = progress;
-        this.broadcastJobUpdate(job);
-      }
-
-      // Execute the actual tool
+      // Real progress tracking instead of simulation
+      logger.info(`Starting job ${job.id}: ${job.toolName}`);
+      
+      // Initial setup progress
+      job.progress = 10;
+      this.broadcastJobUpdate(job);
+      
+      // Execute the actual tool with real-time progress
+      const startTime = Date.now();
       const result = await zkPretClient.executeTool(job.toolName, job.parameters);
+      const executionTime = Date.now() - startTime;
       
       job.status = 'completed';
-      job.result = result;
+      job.result = {
+        ...result,
+        executionTimeMs: executionTime,
+        jobId: job.id,
+        completedAt: new Date().toISOString()
+      };
       job.endTime = new Date();
       job.progress = 100;
+
+      logger.info(`Job ${job.id} completed successfully in ${executionTime}ms`);
 
     } catch (error) {
       job.status = 'failed';
       job.error = error instanceof Error ? error.message : 'Unknown error';
       job.endTime = new Date();
+      
+      logger.error(`Job ${job.id} failed:`, error);
     }
 
     this.broadcastJobUpdate(job);

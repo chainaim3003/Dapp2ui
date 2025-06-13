@@ -1,104 +1,106 @@
-class ZKPretAPI {
-    constructor() {
-        this.baseURL = '/api/v1';
-    }
-
-    async request(endpoint, options = {}) {
-        const config = {
-            method: options.method || 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        };
-
-        if (options.body) {
-            config.body = JSON.stringify(options.body);
-        }
-
-        const response = await fetch(`${this.baseURL}${endpoint}`, config);
-        return await response.json();
-    }
-
+// ZK-PRET API utilities
+const zkpretAPI = {
+    baseURL: 'http://localhost:3000',  // Changed from 8080 to 3000
+    
     async healthCheck() {
-        return await this.request('/health');
-    }
-
-    async listTools() {
-        return await this.request('/tools');
-    }
-
-    async executeTool(toolName, parameters = {}) {
-        return await this.request('/tools/execute', {
-            method: 'POST',
-            body: { toolName, parameters }
-        });
-    }
-
-    // Composed Proofs API Methods
+        try {
+            const response = await fetch(`${this.baseURL}/api/v1/health`);
+            return await response.json();
+        } catch (error) {
+            throw new Error(`Health check failed: ${error.message}`);
+        }
+    },
+    
+    async executeTool(toolName, parameters) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/v1/tools/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    toolName: toolName,
+                    parameters: parameters
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            throw new Error(`Tool execution failed: ${error.message}`);
+        }
+    },
+    
     async getComposedProofTemplates() {
-        return await this.request('/composed-proofs/templates');
+        try {
+            const response = await fetch(`${this.baseURL}/api/v1/composed-proofs/templates`);
+            return await response.json();
+        } catch (error) {
+            throw new Error(`Failed to get templates: ${error.message}`);
+        }
     }
+};
 
-    async getComposedProofTemplate(templateId) {
-        return await this.request(`/composed-proofs/templates/${templateId}`);
-    }
-
-    async executeComposedProof(composedProofRequest) {
-        return await this.request('/composed-proofs/execute', {
-            method: 'POST',
-            body: composedProofRequest
-        });
-    }
-
-    async getComposedProofStatus(executionId) {
-        return await this.request(`/composed-proofs/status/${executionId}`);
-    }
-
-    async getComposedProofCacheStats() {
-        return await this.request('/composed-proofs/cache/stats');
-    }
-
-    async clearComposedProofCache() {
-        return await this.request('/composed-proofs/cache/clear', {
-            method: 'POST'
-        });
-    }
-
-    async addComposedProofTemplate(template) {
-        return await this.request('/composed-proofs/templates', {
-            method: 'POST',
-            body: template
-        });
-    }
-}
-
-class NotificationManager {
-    constructor() {
-        this.container = document.getElementById('notifications');
-    }
-
-    show(type, title, message) {
+// Simple notifications system
+const notifications = {
+    show(title, message, type = 'info') {
+        const container = document.getElementById('notifications');
+        if (!container) return;
+        
         const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
+        notification.className = `notification notification-${type} mb-2 p-4 rounded-lg shadow-lg max-w-sm`;
+        
+        const colors = {
+            success: 'bg-green-100 border-green-500 text-green-800',
+            error: 'bg-red-100 border-red-500 text-red-800',
+            warning: 'bg-yellow-100 border-yellow-500 text-yellow-800',
+            info: 'bg-blue-100 border-blue-500 text-blue-800'
+        };
+        
+        notification.className += ` ${colors[type]} border-l-4`;
+        
         notification.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
-                    <h4 class="font-semibold">${title}</h4>
-                    <p class="text-sm mt-1">${message}</p>
+                    <div class="font-semibold">${title}</div>
+                    <div class="text-sm mt-1">${message}</div>
                 </div>
-                <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         `;
-
-        this.container.appendChild(notification);
-        setTimeout(() => notification.remove(), 5000);
+        
+        container.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    },
+    
+    success(title, message) {
+        this.show(title, message, 'success');
+    },
+    
+    error(title, message) {
+        this.show(title, message, 'error');
+    },
+    
+    warning(title, message) {
+        this.show(title, message, 'warning');
+    },
+    
+    info(title, message) {
+        this.show(title, message, 'info');
     }
+};
 
-    success(title, message) { this.show('success', title, message); }
-    error(title, message) { this.show('error', title, message); }
-    warning(title, message) { this.show('warning', title, message); }
-    info(title, message) { this.show('info', title, message); }
-}
-
-window.zkpretAPI = new ZKPretAPI();
-window.notifications = new NotificationManager();
+// Make API and notifications available globally
+window.zkpretAPI = zkpretAPI;
+window.notifications = notifications;

@@ -6,6 +6,15 @@ import { createServer } from 'http';
 import { logger } from './utils/logger.js';
 import { zkPretClient } from './services/zkPretClient.js';
 import { composedProofService } from './services/ComposedProofService.js';
+// Import blockchain state service with error handling
+let blockchainStateService: any = null;
+try {
+  const { blockchainStateService: service } = await import('./services/blockchainStateService.js');
+  blockchainStateService = service;
+  logger.info('Blockchain state service loaded successfully');
+} catch (error) {
+  logger.warn('Blockchain state service failed to load', { error: error instanceof Error ? error.message : String(error) });
+}
 import {
   ComposedProofRequest,
   ComposedProofExecutionResponse,
@@ -53,6 +62,96 @@ app.post('/api/v1/tools/execute', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Execution failed' });
+  }
+});
+
+// Blockchain State API Endpoints
+
+// Get current blockchain state
+app.get('/api/v1/blockchain/state', async (_req, res) => {
+  try {
+    if (!blockchainStateService) {
+      return res.status(503).json({ 
+        error: 'Blockchain state service not available',
+        message: 'Service failed to load during server startup'
+      });
+    }
+    
+    const state = await blockchainStateService.getCurrentState();
+    res.json({
+      state,
+      formatted: blockchainStateService.formatStateForDisplay(state),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Failed to get blockchain state', { error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: 'Failed to get blockchain state' });
+  }
+});
+
+// Execute GLEIF verification with state tracking
+app.post('/api/v1/tools/execute-with-state', async (req, res) => {
+  try {
+    const { toolName, parameters } = req.body;
+    
+    // Check if blockchain state service is available
+    if (!blockchainStateService) {
+      logger.warn('Blockchain state service not available, falling back to regular execution');
+      // Fall back to regular execution without state tracking
+      const result = await zkPretClient.executeTool(toolName, parameters);
+      return res.json({
+        ...result,
+        message: 'Executed without state tracking (service unavailable)',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Check if this is a GLEIF-related tool that should have state tracking
+    const stateTrackingTools = [
+      'get-GLEIF-verification-with-sign',
+      'get-Corporate-Registration-verification-with-sign',
+      'get-EXIM-verification-with-sign'
+    ];
+    
+    if (stateTrackingTools.includes(toolName)) {
+      const { result, stateComparison } = await blockchainStateService.executeWithStateTracking(
+        toolName,
+        parameters,
+        (tool: string, params: any) => zkPretClient.executeTool(tool, params)
+      );
+      
+      res.json({
+        ...result,
+        stateComparison: {
+          ...stateComparison,
+          beforeFormatted: blockchainStateService.formatStateForDisplay(stateComparison.before),
+          afterFormatted: blockchainStateService.formatStateForDisplay(stateComparison.after)
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // For non-state-tracking tools, use regular execution
+      const result = await zkPretClient.executeTool(toolName, parameters);
+      res.json({
+        ...result,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('Execution with state tracking failed', { error: error instanceof Error ? error.message : String(error) });
+    
+    // Try to fall back to regular execution
+    try {
+      const { toolName, parameters } = req.body;
+      const result = await zkPretClient.executeTool(toolName, parameters);
+      res.json({
+        ...result,
+        message: 'Fallback execution succeeded (state tracking failed)',
+        timestamp: new Date().toISOString()
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ error: 'Both state tracking and fallback execution failed' });
+    }
   }
 });
 

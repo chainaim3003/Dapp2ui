@@ -1,6 +1,8 @@
 class SCFComponent {
     constructor() {
-        this.setupEventListeners();
+        console.log('SCF Component initialized - using main form');
+        // SCF component uses the main form fields directly
+        // No additional event listeners needed since main app handles execution
     }
 
     setupEventListeners() {
@@ -105,3 +107,5 @@ class SCFComponent {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SCFComponent;
 }
+
+window.SCFComponent = SCFComponent;

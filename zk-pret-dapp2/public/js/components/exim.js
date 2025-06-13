@@ -1,17 +1,23 @@
 class EximComponent {
     constructor() {
-        this.render();
+        console.log('EXIM Component initialized - using main form');
+        // EXIM component uses the main form fields directly
+        // No additional rendering needed since form is already in main HTML
     }
 
-    render() {
-        const container = document.getElementById('exim-content');
-        container.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-cog text-4xl mb-4 opacity-50"></i>
-                <p>Exim verification component</p>
-                <p class="text-sm">Implementation coming soon...</p>
-            </div>
-        `;
+    // Optional: Add any EXIM-specific methods here
+    validateEximData(data) {
+        const required = ['companyName'];
+        const missing = required.filter(field => !data[field] || !data[field].trim());
+        
+        if (missing.length > 0) {
+            return {
+                valid: false,
+                message: `Missing required fields: ${missing.join(', ')}`
+            };
+        }
+        
+        return { valid: true };
     }
 }
 

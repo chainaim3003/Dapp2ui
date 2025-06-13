@@ -71,3 +71,35 @@ export interface ZKPretClientConfig {
   stdioPath?: string;
   stdioBuildPath?: string;
 }
+
+// Blockchain State Types
+export interface BlockchainState {
+  isGLEIFCompliant: boolean;
+  totalVerifications: number;
+  smartContractActive: boolean;
+  riskMitigationBase: number;
+  complianceMapRoot: string;
+  complianceActionState: string;
+  admin: string;
+  lastUpdateTimestamp?: string;
+}
+
+export interface StateChange {
+  field: string;
+  before: any;
+  after: any;
+  changed: boolean;
+  type: 'boolean' | 'number' | 'string';
+}
+
+export interface StateComparison {
+  before: BlockchainState;
+  after: BlockchainState;
+  changes: StateChange[];
+  hasChanges: boolean;
+  timestamp: string;
+}
+
+export interface ExecutionWithStateResult extends ToolExecutionResult {
+  stateComparison?: StateComparison;
+}
