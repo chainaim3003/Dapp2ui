@@ -442,6 +442,28 @@
                     <p class="text-sm text-gray-600 mt-2">Prove data integrity without revealing content or structure</p>
                 </div>
             </nav>
+            
+            <!-- Risk & Liquidity Prover Only Navigation -->
+            <nav id="risk-only-nav" class="hidden bg-white rounded-lg p-1 shadow-sm">
+                <div class="text-center py-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center justify-center">
+                        <i class="fas fa-chart-line mr-3 text-red-600"></i>
+                        Risk & Liquidity Prover
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-2">Demonstrate compliance using ACTUS and Basel III standards</p>
+                </div>
+            </nav>
+            
+            <!-- Registry Only Navigation -->
+            <nav id="registry-only-nav" class="hidden bg-white rounded-lg p-1 shadow-sm">
+                <div class="text-center py-4">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center justify-center">
+                        <i class="fas fa-book mr-3 text-emerald-600"></i>
+                        Registry
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-2">Secure entity registration and verification with immutable records</p>
+                </div>
+            </nav>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1478,6 +1500,10 @@
                     this.showProcessIntegrityOnly();
                 } else if (targetTab === 'data-integrity') {
                     this.showDataIntegrityOnly();
+                } else if (targetTab === 'risk') {
+                    this.showRiskOnly();
+                } else if (targetTab === 'registry') {
+                    this.showRegistryOnly();
                 }
             }
 
@@ -1528,6 +1554,58 @@
                 
                 // Update page title to reflect the current mode
                 document.title = 'Business Data Integrity Prover | ZK-PRET';
+                
+                // Clear the session storage to avoid affecting other navigations
+                sessionStorage.removeItem('zkpret_target_tab');
+            }
+
+            showRiskOnly() {
+                // Hide the main tab navigation
+                const mainNav = document.querySelector('#tab-navigation nav:first-child');
+                const riskOnlyNav = document.getElementById('risk-only-nav');
+                
+                mainNav.classList.add('hidden');
+                riskOnlyNav.classList.remove('hidden');
+                
+                // Hide all tab content except risk
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id !== 'risk-tab') {
+                        content.style.display = 'none';
+                    }
+                });
+                
+                // Show only risk tab
+                document.getElementById('risk-tab').classList.remove('hidden');
+                this.currentTab = 'risk';
+                
+                // Update page title to reflect the current mode
+                document.title = 'Risk & Liquidity Prover | ZK-PRET';
+                
+                // Clear the session storage to avoid affecting other navigations
+                sessionStorage.removeItem('zkpret_target_tab');
+            }
+
+            showRegistryOnly() {
+                // Hide the main tab navigation
+                const mainNav = document.querySelector('#tab-navigation nav:first-child');
+                const registryOnlyNav = document.getElementById('registry-only-nav');
+                
+                mainNav.classList.add('hidden');
+                registryOnlyNav.classList.remove('hidden');
+                
+                // Hide all tab content except registry
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id !== 'registry-tab') {
+                        content.style.display = 'none';
+                    }
+                });
+                
+                // Show only registry tab
+                document.getElementById('registry-tab').classList.remove('hidden');
+                this.currentTab = 'registry';
+                
+                // Update page title to reflect the current mode
+                document.title = 'Registry | ZK-PRET';
                 
                 // Clear the session storage to avoid affecting other navigations
                 sessionStorage.removeItem('zkpret_target_tab');
@@ -1699,8 +1777,10 @@
                 // Check if we're in any specialized mode
                 const processIntegrityOnlyNav = document.getElementById('process-integrity-only-nav');
                 const dataIntegrityOnlyNav = document.getElementById('data-integrity-only-nav');
+                const riskOnlyNav = document.getElementById('risk-only-nav');
+                const registryOnlyNav = document.getElementById('registry-only-nav');
                 
-                if (!processIntegrityOnlyNav.classList.contains('hidden') || !dataIntegrityOnlyNav.classList.contains('hidden')) {
+                if (!processIntegrityOnlyNav.classList.contains('hidden') || !dataIntegrityOnlyNav.classList.contains('hidden') || !riskOnlyNav.classList.contains('hidden') || !registryOnlyNav.classList.contains('hidden')) {
                     // In specialized mode, don't allow tab switching
                     return;
                 }
